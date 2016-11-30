@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipes;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -27,6 +29,8 @@ namespace RemoteExecution
         {
             RemoteName = name;
             QueueListener();
+
+            JsonConvert.DefaultSettings = Common.GetJsonSettings;
         }
 
         private void QueueListener()
@@ -61,7 +65,7 @@ namespace RemoteExecution
                     var messageBytes = new List<byte>();
                     do
                     {
-                        var buffer = new byte[1024];
+                        var buffer = new byte[10];
                         var bytesRead = await pipe.ReadAsync(buffer, 0, buffer.Length, CTS.Token);
                         messageBytes.AddRange(buffer.Take(bytesRead));
                     }
@@ -69,14 +73,67 @@ namespace RemoteExecution
 
                     if (pipe.IsMessageComplete && messageBytes.Count > 0)
                     {
-                        // TODO : Process message
-                        Console.WriteLine($"Received {messageBytes.Count} bytes:\n{string.Join(" ", messageBytes.Select(b => b.ToString("X2")))}");
-                        Console.WriteLine();
+                        object returnVal = null;
+                        bool shouldCloseConnection = false;
+                        ProcessMessage(messageBytes.ToArray(), ref returnVal, ref shouldCloseConnection);
+
+                        var returnString = JsonConvert.SerializeObject(returnVal);
+                        var returnBytes = Encoding.UTF8.GetBytes(returnString);
+                        await pipe.WriteAsync(returnBytes, 0, returnBytes.Length, CTS.Token);
+
+                        if (shouldCloseConnection)
+                        {
+                            pipe.Disconnect();
+                        }
                     }
                 }
             }
         }
 
+        private void ProcessMessage(byte[] messageBytes, ref object returnVal, ref bool shouldCloseConnection)
+        {
+            RemoteCommand command = null;
+            try
+            {
+                var commandString = new string(Encoding.UTF8.GetChars(messageBytes));
+                command = JsonConvert.DeserializeObject<RemoteCommand>(commandString);
+                Console.WriteLine("Received command: ");
+                Console.WriteLine($"\tCommand: {command.Command}");
+                Console.WriteLine($"\tObject id: {command.ObjectId}");
+                Console.WriteLine($"\tMethod name: {command.MethodName}");
+                Console.WriteLine($"\tParameter cound: {command.Parameters?.Length ?? 0}");
+                Console.WriteLine($"\tType: {command.Type.AssemblyQualifiedName}");
+            }
+            catch (JsonException)
+            {
+                // TODO - Report that one of the parameters is not deserializable by Newtonsoft.Json
+                return;
+            }
+
+            switch (command.Command)
+            {
+                case Commands.CloseConnection:
+                    // TODO - Decrement ref count on associated object
+                    shouldCloseConnection = true;
+                    break;
+
+                // TODO
+                case Commands.NewObject:
+
+                    // TODO : TEMPORARY!
+                    returnVal = Guid.NewGuid();
+
+                    break;
+                case Commands.RetrieveObject:
+                    break;
+                case Commands.Invoke:
+                    break;
+
+                default:
+                    break;
+            }
+        }
+        
         public void Dispose()
         {
             // Prevent new tasks from beginning
