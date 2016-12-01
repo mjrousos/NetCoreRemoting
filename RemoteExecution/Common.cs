@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace RemoteExecution
 {
-    internal static class Common
+    internal static class SerializationHelper
     {
         private static bool initialized = false;
         
@@ -21,5 +21,53 @@ namespace RemoteExecution
                     new TypeConverter()
                 }
             };
+
+        public static string Serialize(object o)
+        {
+            if (!initialized)
+            {
+                JsonConvert.DefaultSettings = SerializationHelper.GetJsonSettings;
+                initialized = true;
+            }
+
+            var json = JsonConvert.SerializeObject(o);
+            return TypeConverter.CleanSerializedString(json);
+        }
+
+        public static object Deserialize(string s)
+        {
+            if (!initialized)
+            {
+                JsonConvert.DefaultSettings = SerializationHelper.GetJsonSettings;
+                initialized = true;
+            }
+
+            try
+            {
+                return JsonConvert.DeserializeObject(s);
+            }
+            catch (JsonException exc)
+            {
+                throw new ArgumentException("Invalid json string", exc);
+            }
+        }
+
+        public static T Deserialize<T>(string s)
+        {
+            if (!initialized)
+            {
+                JsonConvert.DefaultSettings = SerializationHelper.GetJsonSettings;
+                initialized = true;
+            }
+
+            try
+            {
+                return JsonConvert.DeserializeObject<T>(s);
+            }
+            catch (JsonException exc)
+            {
+                throw new ArgumentException("Invalid json string", exc);
+            }
+        }
     }
 }

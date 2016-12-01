@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipes;
@@ -29,8 +28,6 @@ namespace RemoteExecution
         {
             RemoteName = name;
             QueueListener();
-
-            JsonConvert.DefaultSettings = Common.GetJsonSettings;
         }
 
         private void QueueListener()
@@ -77,7 +74,7 @@ namespace RemoteExecution
                         bool shouldCloseConnection = false;
                         ProcessMessage(messageBytes.ToArray(), ref returnVal, ref shouldCloseConnection);
 
-                        var returnString = JsonConvert.SerializeObject(returnVal);
+                        var returnString = SerializationHelper.Serialize(returnVal);
                         var returnBytes = Encoding.UTF8.GetBytes(returnString);
                         await pipe.WriteAsync(returnBytes, 0, returnBytes.Length, CTS.Token);
 
@@ -93,10 +90,11 @@ namespace RemoteExecution
         private void ProcessMessage(byte[] messageBytes, ref object returnVal, ref bool shouldCloseConnection)
         {
             RemoteCommand command = null;
+            var commandString = new string(Encoding.UTF8.GetChars(messageBytes));
+
             try
             {
-                var commandString = new string(Encoding.UTF8.GetChars(messageBytes));
-                command = JsonConvert.DeserializeObject<RemoteCommand>(commandString);
+                command = SerializationHelper.Deserialize<RemoteCommand>(commandString);
                 Console.WriteLine("Received command: ");
                 Console.WriteLine($"\tCommand: {command.Command}");
                 Console.WriteLine($"\tObject id: {command.ObjectId}");
@@ -104,9 +102,10 @@ namespace RemoteExecution
                 Console.WriteLine($"\tParameter cound: {command.Parameters?.Length ?? 0}");
                 Console.WriteLine($"\tType: {command.Type.AssemblyQualifiedName}");
             }
-            catch (JsonException)
+            catch (ArgumentException)
             {
-                // TODO - Report that one of the parameters is not deserializable by Newtonsoft.Json
+                Console.WriteLine("WARNING: Invalid message not processed:");
+                Console.WriteLine($"    {commandString}");
                 return;
             }
 

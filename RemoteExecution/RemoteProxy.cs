@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO.Pipes;
 using System.Linq;
@@ -56,8 +55,6 @@ namespace RemoteExecution
 
         private void Initialize()
         {
-            JsonConvert.DefaultSettings = Common.GetJsonSettings;
-
             // Setup pipe
             Pipe = new NamedPipeClientStream(RemoteMachineName, RemoteExecutionServerName, PipeDirection.InOut, PipeOptions.Asynchronous);
             Pipe.Connect();
@@ -66,7 +63,7 @@ namespace RemoteExecution
         
         private async Task<T> SendCommand<T>(RemoteCommand command)
         {
-            var commandString = JsonConvert.SerializeObject(command);
+            var commandString = SerializationHelper.Serialize(command);
             var commandBytes = Encoding.UTF8.GetBytes(commandString);
             await Pipe.WriteAsync(commandBytes, 0, commandBytes.Length);
 
@@ -79,7 +76,8 @@ namespace RemoteExecution
                 returnBuffer = new byte[1024];
             } while (!Pipe.IsMessageComplete);
 
-            return JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(returnBytes.ToArray()));
+            var returnString = Encoding.UTF8.GetString(returnBytes.ToArray());
+            return SerializationHelper.Deserialize<T>(returnString);
         }
 
         public void Dispose()
