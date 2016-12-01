@@ -8,14 +8,18 @@ namespace RemoteExecution
 {
     internal static class Common
     {
-        internal static JsonSerializerSettings GetJsonSettings() =>
+        private static bool initialized = false;
+        
+        private static JsonSerializerSettings GetJsonSettings() =>
             new JsonSerializerSettings
             {
                 TypeNameHandling = TypeNameHandling.Objects,
                 NullValueHandling = NullValueHandling.Ignore,
                 ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
                 PreserveReferencesHandling = PreserveReferencesHandling.Objects,
-                Converters = new List<JsonConverter>() { }
+                Converters = new List<JsonConverter>() {
+                    new TypeConverter()
+                }
             };
     }
 }
