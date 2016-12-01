@@ -4,6 +4,8 @@ using System.Text;
 
 using RemoteExecution;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 
 namespace TestClient
 {
@@ -35,7 +37,7 @@ namespace TestClient
             {
                 Console.WriteLine("Creating proxy objects...");
 
-                var proxy3 = RemoteExecutionClient.CreateRemoteInstance<List<int>>(RemoteExecutionName);
+                var proxy3 = RemoteExecutionClient.CreateRemoteInstance<List<int>>(RemoteExecutionName, new BadImageFormatException("Foo!"));
                 Console.WriteLine($"Created remote object with ID: {proxy3.ID}");
 
                 var proxy4 = RemoteExecutionClient.CreateRemoteInstance<RemoteProxy>(RemoteExecutionName, new List<string>(), proxy3.ID);
