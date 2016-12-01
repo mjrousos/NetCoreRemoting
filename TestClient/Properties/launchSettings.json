@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "TestClient": {
+      "commandName": "Project",
+      "commandLineArgs": "server"
+    }
+  }
+}
