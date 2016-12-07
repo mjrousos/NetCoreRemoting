@@ -26,7 +26,7 @@ namespace RemoteExecution
             RemoteExecutionServerName = remoteExecutionServerName;
             Type = type;
 
-            Initialize();
+            InitializeAsync().Wait();
 
             // Request remote object be created
             var command = new RemoteCommand
@@ -34,10 +34,10 @@ namespace RemoteExecution
                  Command = Commands.NewObject,
                  Type = type,
                  Parameters = parameters,
-                 ParameterTypes = parameters.Select(p => p.GetType()).ToArray()
+                 ParameterTypes = parameters?.Select(p => p?.GetType()).ToArray()
             };
 
-            ID = SendCommand<Guid>(command).Result;
+            ID = SendCommandAsync<Guid>(command).Result;
         }
 
         public RemoteProxy(string remoteExecutionServerName, Guid objectId) : this(".", remoteExecutionServerName, objectId) { }
@@ -48,21 +48,26 @@ namespace RemoteExecution
             RemoteExecutionServerName = remoteExecutionServerName;
             ID = objectId;
 
-            Initialize();
+            InitializeAsync().Wait();
 
             // TODO
         }
 
-        private void Initialize()
+        private async Task InitializeAsync()
         {
             // Setup pipe
             Pipe = new NamedPipeClientStream(RemoteMachineName, RemoteExecutionServerName, PipeDirection.InOut, PipeOptions.Asynchronous);
-            Pipe.Connect();
+            await Pipe.ConnectAsync();
             Pipe.ReadMode = PipeTransmissionMode.Message;
         }
         
-        private async Task<T> SendCommand<T>(RemoteCommand command)
+        private async Task<T> SendCommandAsync<T>(RemoteCommand command)
         {
+            if (Pipe == null || !Pipe.IsConnected)
+            {
+                await InitializeAsync();
+            }
+
             var commandString = SerializationHelper.Serialize(command);
             var commandBytes = Encoding.UTF8.GetBytes(commandString);
             await Pipe.WriteAsync(commandBytes, 0, commandBytes.Length);
@@ -82,10 +87,16 @@ namespace RemoteExecution
 
         public void Dispose()
         {
-            // TODO - Send 'disconnect' message?
-
-            if (Pipe != null)
+            if (Pipe != null && ID != Guid.Empty)
             {
+                if (Pipe.IsConnected)
+                {
+                    SendCommandAsync<int>(new RemoteCommand
+                    {
+                        Command = Commands.CloseConnection,
+                        ObjectId = ID,
+                    }).Wait(1000);  // Wait up to a second before closing the pipe
+                }
                 Pipe.Dispose();
             }
         }

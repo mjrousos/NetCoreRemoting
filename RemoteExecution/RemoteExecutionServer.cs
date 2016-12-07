@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO.Pipes;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ namespace RemoteExecution
 {
     public class RemoteExecutionServer : IDisposable
     {
+        ConcurrentDictionary<Guid, RemotelyCreatedObject> Objects = new ConcurrentDictionary<Guid, RemotelyCreatedObject>();
         ConcurrentBag<Task> ConnectionTasks = new ConcurrentBag<Task>();
         CancellationTokenSource CTS = new CancellationTokenSource();
 
@@ -112,16 +114,59 @@ namespace RemoteExecution
             switch (command.Command)
             {
                 case Commands.CloseConnection:
-                    // TODO - Decrement ref count on associated object
+                    // Decrement the ref-count for the object referenced by the closing connection
+                    RemotelyCreatedObject remotelyCreatedObject;
+                    if (Objects.TryGetValue(command.ObjectId, out remotelyCreatedObject))
+                    {
+                        if (0 >= Interlocked.Decrement(ref remotelyCreatedObject.RefCount))
+                        {
+                            // If no references remain, end-of-life the object and remove it from the dictionary
+                            //
+                            // If we need to adjust remote object lifetime (should a future process be able to get an old object?)
+                            // we can change that behavior here.
+                            remotelyCreatedObject.Value = null;
+                            Objects.TryRemove(command.ObjectId, out remotelyCreatedObject);
+                        }
+                    }
                     shouldCloseConnection = true;
                     break;
-
-                // TODO
                 case Commands.NewObject:
+                    if (command.Type != null)
+                    {
+                        object newObj = null;
+                        try
+                        {
+                            if (command.Parameters?.Length > 0)
+                            {
+                                object[] parameters = new object[command.Parameters.Length];
+                                for (int i = 0; i < command.Parameters.Length; i++)
+                                { 
+                                    parameters[i] = SerializationHelper.GetObjectAsType(command.Parameters[i], command.ParameterTypes[i]);
+                                }
+                                newObj = Activator.CreateInstance(command.Type, parameters);
+                            }
+                            else
+                            {
+                                if (command.Type.GetTypeInfo().IsValueType || command.Type.GetTypeInfo().DeclaredConstructors.Any(c => c.GetParameters().Length == 0))
+                                {
+                                    newObj = Activator.CreateInstance(command.Type);
+                                }
+                            }
+                        }
+                        catch (Exception exc)
+                        {
+                            Console.WriteLine($"WARNING: Failed to create object of type {command.Type.AssemblyQualifiedName}");
+                            Console.WriteLine($"  Exception: {exc.ToString()}");
+                        }
 
-                    // TODO : TEMPORARY!
-                    returnVal = Guid.NewGuid();
-
+                        if (newObj != null)
+                        {
+                            var newId = Guid.NewGuid();
+                            Objects.TryAdd(newId, new RemotelyCreatedObject { RefCount = 1, Value = newObj });
+                            returnVal = newId;
+                            Console.WriteLine($"Created a new objet with ID {newId.ToString()} and type {command.Type.FullName}");
+                        }
+                    }
                     break;
                 case Commands.RetrieveObject:
                     break;
