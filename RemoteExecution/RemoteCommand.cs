@@ -9,7 +9,7 @@ namespace RemoteExecution
         public Commands Command { get; set; }
         
         // Used for object retrieval or instance method invocation
-        public int ObjectId { get; set; }
+        public Guid ObjectId { get; set; }
 
         // Used for method invocation
         public string MethodName { get; set; }

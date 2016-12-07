@@ -99,7 +99,7 @@ namespace RemoteExecution
                 Console.WriteLine($"\tCommand: {command.Command}");
                 Console.WriteLine($"\tObject id: {command.ObjectId}");
                 Console.WriteLine($"\tMethod name: {command.MethodName}");
-                Console.WriteLine($"\tParameter cound: {command.Parameters?.Length ?? 0}");
+                Console.WriteLine($"\tParameter count: {command.Parameters?.Length ?? 0}");
                 Console.WriteLine($"\tType: {command.Type.AssemblyQualifiedName}");
             }
             catch (ArgumentException)
