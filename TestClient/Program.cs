@@ -1,11 +1,8 @@
 ﻿using System;
-using System.IO.Pipes;
-using System.Text;
+using System.Collections.Generic;
 
 using RemoteExecution;
-using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
+
 
 namespace TestClient
 {
@@ -21,6 +18,9 @@ namespace TestClient
                 Console.WriteLine("Creating RemoteExecutionServer...");
 
                 RemoteServer = new RemoteExecutionServer(RemoteExecutionName);
+
+                // Enable verbose logging
+                RemoteServer.Logger.LogLevel = MessagePriority.Verbose;
             }
             
             if (args.Length < 1 || args[0] == "client")

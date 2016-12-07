@@ -2,12 +2,14 @@
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 
 namespace RemoteExecution
 {
+    /// <summary>
+    /// A helper class for serializing and deserializing types to/from JSON
+    /// for transport over named pipes
+    /// </summary>
     internal static class SerializationHelper
     {
         private static bool initialized = false;
@@ -20,6 +22,8 @@ namespace RemoteExecution
                 ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
                 PreserveReferencesHandling = PreserveReferencesHandling.Objects,
                 Converters = new List<JsonConverter>() {
+                    // Use a custom type converter to massage type names in order
+                    // to allow limited cross-platform (NetFX <-> NetCore) interoperability
                     new TypeConverter()
                 }
             };
@@ -74,6 +78,7 @@ namespace RemoteExecution
 
         // A wrapper around Convert.ChangeType to handle more cases known to be interesting
         // with Json.Net serialization.
+        // http://www.newtonsoft.com/json/help/html/SerializationGuide.htm
         internal static object GetObjectAsType(object obj, Type type)
         {
             if (obj == null) return null;
