@@ -53,6 +53,44 @@ namespace RemoteExecution
             // TODO
         }
 
+        public async Task InvokeAsync(string methodName, params object[] parameters)
+        {
+            await InvokeAsync<object>(methodName, parameters);
+        }
+
+        public async Task<T> InvokeAsync<T>(string methodName, params object[] parameters)
+        {
+            var command = new RemoteCommand
+            {
+                ObjectId = ID,
+                Command = Commands.Invoke,
+                MethodName = methodName,
+                Parameters = parameters,
+                ParameterTypes = parameters?.Select(p => p?.GetType()).ToArray()
+            };
+
+            return await SendCommandAsync<T>(command);
+        }
+
+        public async Task InvokeStaticAsync(Type type, string methodName, params object[] parameters)
+        {
+            await InvokeStaticAsync<object>(type, methodName, parameters);
+        }
+
+        public async Task<T> InvokeStaticAsync<T>(Type type, string methodName, params object[] parameters)
+        {
+            var command = new RemoteCommand
+            {
+                Type = type,
+                Command = Commands.Invoke,
+                MethodName = methodName,
+                Parameters = parameters,
+                ParameterTypes = parameters?.Select(p => p?.GetType()).ToArray()
+            };
+
+            return await SendCommandAsync<T>(command);
+        }
+
         private async Task InitializeAsync()
         {
             // Setup pipe

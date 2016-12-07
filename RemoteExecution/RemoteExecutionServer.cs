@@ -102,7 +102,7 @@ namespace RemoteExecution
                 Console.WriteLine($"\tObject id: {command.ObjectId}");
                 Console.WriteLine($"\tMethod name: {command.MethodName}");
                 Console.WriteLine($"\tParameter count: {command.Parameters?.Length ?? 0}");
-                Console.WriteLine($"\tType: {command.Type.AssemblyQualifiedName}");
+                Console.WriteLine($"\tType: {command.Type?.AssemblyQualifiedName}");
             }
             catch (ArgumentException)
             {
@@ -138,12 +138,12 @@ namespace RemoteExecution
                         {
                             if (command.Parameters?.Length > 0)
                             {
-                                object[] parameters = new object[command.Parameters.Length];
+                                object[] ctorParameters = new object[command.Parameters.Length];
                                 for (int i = 0; i < command.Parameters.Length; i++)
                                 { 
-                                    parameters[i] = SerializationHelper.GetObjectAsType(command.Parameters[i], command.ParameterTypes[i]);
+                                    ctorParameters[i] = SerializationHelper.GetObjectAsType(command.Parameters[i], command.ParameterTypes[i]);
                                 }
-                                newObj = Activator.CreateInstance(command.Type, parameters);
+                                newObj = Activator.CreateInstance(command.Type, ctorParameters);
                             }
                             else
                             {
@@ -171,6 +171,43 @@ namespace RemoteExecution
                 case Commands.RetrieveObject:
                     break;
                 case Commands.Invoke:
+                    MethodInfo method = null;
+                    object objectToInvokeOn = null;
+
+                    // Lookup method via Reflection
+                    if (command.Type != null)
+                    {
+                        // Static method
+                        method = command.Type.GetRuntimeMethod(command.MethodName, command.ParameterTypes);
+                    }
+                    else if (command.ObjectId != Guid.NewGuid())
+                    {
+                        // Instance method
+                        RemotelyCreatedObject obj = null;
+                        if (Objects.TryGetValue(command.ObjectId, out obj))
+                        {
+                            objectToInvokeOn = obj?.Value;
+                            method = objectToInvokeOn?.GetType().GetRuntimeMethod(command.MethodName, command.ParameterTypes);
+                        }
+                    }
+
+                    // Get parameters
+                    object[] parameters = null;
+                    if (command.Parameters?.Length > 0)
+                    {
+                        parameters = new object[command.Parameters.Length];
+                        for (int i = 0; i < command.Parameters.Length; i++)
+                        {
+                            parameters[i] = SerializationHelper.GetObjectAsType(command.Parameters[i], command.ParameterTypes[i]);
+                        }
+                    }
+
+                    // Invoke method
+                    if (method != null)
+                    {
+                        returnVal = method.Invoke(objectToInvokeOn, parameters);
+                    }
+
                     break;
 
                 default:
