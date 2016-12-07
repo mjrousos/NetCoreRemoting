@@ -5,6 +5,8 @@
         NewObject,
         RetrieveObject,
         Invoke,
+        GetProperty,
+        SetProperty,
         CloseConnection
     }
 }

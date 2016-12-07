@@ -100,7 +100,7 @@ namespace RemoteExecution
                 Console.WriteLine("Received command: ");
                 Console.WriteLine($"\tCommand: {command.Command}");
                 Console.WriteLine($"\tObject id: {command.ObjectId}");
-                Console.WriteLine($"\tMethod name: {command.MethodName}");
+                Console.WriteLine($"\tMethod name: {command.MemberName}");
                 Console.WriteLine($"\tParameter count: {command.Parameters?.Length ?? 0}");
                 Console.WriteLine($"\tType: {command.Type?.AssemblyQualifiedName}");
             }
@@ -178,7 +178,7 @@ namespace RemoteExecution
                     if (command.Type != null)
                     {
                         // Static method
-                        method = command.Type.GetRuntimeMethod(command.MethodName, command.ParameterTypes);
+                        method = command.Type.GetRuntimeMethod(command.MemberName, command.ParameterTypes);
                     }
                     else if (command.ObjectId != Guid.NewGuid())
                     {
@@ -187,7 +187,7 @@ namespace RemoteExecution
                         if (Objects.TryGetValue(command.ObjectId, out obj))
                         {
                             objectToInvokeOn = obj?.Value;
-                            method = objectToInvokeOn?.GetType().GetRuntimeMethod(command.MethodName, command.ParameterTypes);
+                            method = objectToInvokeOn?.GetType().GetRuntimeMethod(command.MemberName, command.ParameterTypes);
                         }
                     }
 
@@ -209,7 +209,48 @@ namespace RemoteExecution
                     }
 
                     break;
+                case Commands.GetProperty:
+                case Commands.SetProperty:
+                    PropertyInfo property = null;
+                    object objectToAccess = null;
+                    // Lookup property via Reflection
+                    if (command.Type != null)
+                    {
+                        // Static property
+                        property = command.Type.GetRuntimeProperty(command.MemberName);
+                    }
+                    else if (command.ObjectId != Guid.NewGuid())
+                    {
+                        // Instance property
+                        RemotelyCreatedObject obj = null;
+                        if (Objects.TryGetValue(command.ObjectId, out obj))
+                        {
+                            objectToAccess = obj?.Value;
+                            property = objectToAccess?.GetType().GetRuntimeProperty(command.MemberName);
+                        }
+                    }
 
+                    // Get parameters
+                    object parameter = null;
+                    if (command.Parameters?.Length > 0)
+                    {
+                        parameter = SerializationHelper.GetObjectAsType(command.Parameters[0], command.ParameterTypes[0]);
+                    }
+
+                    // Get/Set the property
+                    if (property != null)
+                    {
+                        if (command.Command == Commands.GetProperty)
+                        {
+                            returnVal = property.GetValue(objectToAccess);
+                        }
+                        else if (command.Command == Commands.SetProperty)
+                        {
+                            property.SetValue(objectToAccess, parameter);
+                        }
+                    }
+
+                    break;
                 default:
                     break;
             }

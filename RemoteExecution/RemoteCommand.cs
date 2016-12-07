@@ -12,7 +12,7 @@ namespace RemoteExecution
         public Guid ObjectId { get; set; }
 
         // Used for method invocation
-        public string MethodName { get; set; }
+        public string MemberName { get; set; }
 
         // Used for method invocation or object creation
         public object[] Parameters { get; set; }

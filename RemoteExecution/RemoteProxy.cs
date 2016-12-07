@@ -64,7 +64,7 @@ namespace RemoteExecution
             {
                 ObjectId = ID,
                 Command = Commands.Invoke,
-                MethodName = methodName,
+                MemberName = methodName,
                 Parameters = parameters,
                 ParameterTypes = parameters?.Select(p => p?.GetType()).ToArray()
             };
@@ -83,12 +83,62 @@ namespace RemoteExecution
             {
                 Type = type,
                 Command = Commands.Invoke,
-                MethodName = methodName,
+                MemberName = methodName,
                 Parameters = parameters,
                 ParameterTypes = parameters?.Select(p => p?.GetType()).ToArray()
             };
 
             return await SendCommandAsync<T>(command);
+        }
+
+        public async Task<T> GetPropertyAsync<T>(string propertyName)
+        {
+            var command = new RemoteCommand
+            {
+                ObjectId = ID,
+                Command = Commands.GetProperty,
+                MemberName = propertyName,
+            };
+
+            return await SendCommandAsync<T>(command);
+        }
+
+        public async Task<T> GetStaticPropertyAsync<T>(Type type, string propertyName)
+        {
+            var command = new RemoteCommand
+            {
+                Type = type,
+                Command = Commands.GetProperty,
+                MemberName = propertyName,
+            };
+
+            return await SendCommandAsync<T>(command);
+        }
+
+        public async Task SetPropertyAsync(string propertyName, object value)
+        {
+            var command = new RemoteCommand
+            {
+                ObjectId = ID,
+                Command = Commands.SetProperty,
+                MemberName = propertyName,
+                Parameters = new[] { value }
+            };
+
+            await SendCommandAsync<object>(command);
+        }
+
+        public async Task SetStaticPropertyAsync(Type type, string propertyName, object value)
+        {
+            var command = new RemoteCommand
+            {
+                Type = type,
+                Command = Commands.SetProperty,
+                MemberName = propertyName,
+                Parameters = new[] { value }
+            };
+
+            await SendCommandAsync<object>(command);
         }
 
         private async Task InitializeAsync()

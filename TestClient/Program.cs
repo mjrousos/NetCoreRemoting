@@ -41,7 +41,8 @@ namespace TestClient
                 proxy3.InvokeAsync("Add", 3).Wait();
                 proxy3.InvokeAsync("Add", 5).Wait();
                 var index = proxy3.InvokeAsync<int>("IndexOf", 5).Result;
-                Console.WriteLine($"Added 2 items to remote list and found index of '5' is: {index}");
+                var count = proxy3.GetPropertyAsync<int>("Count").Result;
+                Console.WriteLine($"Added items to remote list (count: {count}) and found index of '5' is: {index}");
 
                 var proxy4 = RemoteExecutionClient.CreateRemoteInstance<RemoteProxy>(RemoteExecutionName, typeof(Program), RemoteExecutionName, null);
                 Console.WriteLine($"Created remote object with ID: {proxy4.ID}");
