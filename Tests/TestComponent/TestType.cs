@@ -13,7 +13,9 @@ namespace TestTypes
 
         internal Queue<string> MessageQueue { get; } = new Queue<string>();
 
-        public byte MaxLength { get; set; }
+        public byte Length => (byte)MessageQueue.Count;
+
+        public byte MaxLength { get; set; } = 5;
 
         public MessageHolder(string name)
         {
@@ -22,7 +24,8 @@ namespace TestTypes
 
         public void AddMessageToQueue(string message)
         {
-            MessageQueue.Enqueue(message);
+            if (MessageQueue.Count < MaxLength)
+                MessageQueue.Enqueue(message);
         }
 
         public string RetrieveMessageFromQueue()

@@ -25,7 +25,7 @@ namespace RemoteExecution
         volatile bool Active = true;
         
         // This lock protects access to the Active bool
-        ReaderWriterLockSlim ConnectionsActiveLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        ReaderWriterLockSlim ConnectionsActiveLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
         // The name of the remote execution server (which proxies use to connect)
         public string RemoteName { get; set; }
@@ -102,7 +102,7 @@ namespace RemoteExecution
 
                     if (pipe.IsMessageComplete && messageBytes.Count > 0)
                     {
-                        Logger.Log($"Received {messageBytes} bytes from client", MessagePriority.Verbose);
+                        Logger.Log($"Received {messageBytes.Count} bytes from client", MessagePriority.Verbose);
 
                         // Process the message
                         object returnVal = null;

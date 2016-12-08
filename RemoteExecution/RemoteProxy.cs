@@ -212,7 +212,8 @@ namespace RemoteExecution
                 ObjectId = ID,
                 Command = Commands.SetProperty,
                 MemberName = propertyName,
-                Parameters = new[] { value }
+                Parameters = new[] { value },
+                ParameterTypes = new[] { value?.GetType() }
             };
 
             await SendCommandAsync<object>(command);
@@ -231,7 +232,8 @@ namespace RemoteExecution
                 Type = type,
                 Command = Commands.SetProperty,
                 MemberName = propertyName,
-                Parameters = new[] { value }
+                Parameters = new[] { value },
+                ParameterTypes = new[] { value?.GetType() }
             };
 
             await SendCommandAsync<object>(command);
