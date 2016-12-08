@@ -5,7 +5,8 @@
   },
 
   "dependencies": {
-    "RemoteExecution": "0.9.0"
+    "RemoteExecution": "0.9.0",
+    "TestComponent": "1.0.0"
   },
 
   "frameworks": {
