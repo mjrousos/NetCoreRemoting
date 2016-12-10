@@ -94,7 +94,7 @@ namespace RemoteExecution
                     var messageBytes = new List<byte>();
                     do
                     {
-                        var buffer = new byte[10];
+                        var buffer = new byte[1024];
                         var bytesRead = await pipe.ReadAsync(buffer, 0, buffer.Length, CTS.Token);
                         messageBytes.AddRange(buffer.Take(bytesRead));
                     }

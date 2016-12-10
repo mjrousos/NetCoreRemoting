@@ -1,4 +1,4 @@
-.NET Core Remote Communication and Marshalling
+.NET Core Remote Communication and Marshaling
 ==============================================
 
 Overview
@@ -40,3 +40,8 @@ There are some tests in the [Tests](https://github.com/mjrousos/NetCoreRemoting/
 1. Run the [TestServer](https://github.com/mjrousos/NetCoreRemoting/tree/master/Tests/TestServer) application to start listening for remote objects.
 	1. Before running, though, make sure that you've copied TestClient and TestComponent dlls next to the TestServer app. This is important because TestServer doesn't usually depend on those libraries, but the client will be requesting that types from them be created. Therefore, it's necessary for TestServer to be able to find the assemblies so that it can load and activate the required types.
 2. Run the [TestClient](https://github.com/mjrousos/NetCoreRemoting/tree/master/Tests/TestClient) which will first make a series of hard-coded remote calls that I found useful for initial ad-hoc testing, and then create a remote instance of [`TestTypes.MessageHolder`](https://github.com/mjrousos/NetCoreRemoting/blob/master/Tests/TestComponent/TestType.cs) (a glorified wrapper around a queue) and allow the user to ask for different `MessageHolder` commands to be executed remotely. Of special note is the 'print' command which will cause information about the queue to be written to the console. When calling this, notice that the console output happens in the TestServer command prompt since that's the process in which all the `MessageHolder` code is executing.  
+
+Demo
+----
+
+There's a brief demo video of this sample available [on YouTube](https://youtu.be/QwvYXrHM4E4).
